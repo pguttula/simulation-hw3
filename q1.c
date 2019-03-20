@@ -57,8 +57,9 @@ void bubble_up(struct heap* hp) {
     struct event* cur = hp->arr[cur_index];
     struct event* par = hp->arr[par_index];
     if(par->timestamp > cur->timestamp ||
-        (par->timestamp == cur->timestamp &&
-         par->entertime > cur->entertime)) {
+       (par->timestamp == cur->timestamp &&
+         par->entertime > cur->entertime)) 
+         {
       swap(par,cur);
     }
     else {
@@ -80,7 +81,7 @@ int min(struct heap* hp, int i, int j) {
   }
   struct event* ev1 = hp->arr[i];
   struct event* ev2 = hp->arr[j];
-    if (ev1->timestamp < ev2->timestamp ||
+    if (ev1->timestamp < ev2->timestamp||
         (ev1->timestamp == ev2->timestamp &&
          ev1->entertime < ev2->entertime)) {
       return i;
@@ -184,6 +185,8 @@ double getservice(int sequence){
   }
 }
 
+//we keep resetting the sequnce number to 0 once the event gets a seq
+//num of 2. If the event is generated from outside, we flag it as 1.
 void scheduleevent(char* eventtype,double clocker,int sequence,int index,double meantime,struct heap* hp){
   if(sequence == num_of_queue){
     sequence =0;
@@ -196,6 +199,7 @@ void scheduleevent(char* eventtype,double clocker,int sequence,int index,double 
   int outsideflag;
   struct event* newevent = (struct event*)malloc(sizeof(struct event));
   if(strcmp(event,"A") == 0){
+  //printf("schedule eve index %d,sequence %d \n",index,sequence);
     if(meantime == 0){
       time = clocker;
       outsideflag = 0;
@@ -220,8 +224,10 @@ void scheduleevent(char* eventtype,double clocker,int sequence,int index,double 
   newevent->outsideworld = outsideflag;
   putevent(hp,newevent);
 }
-
+//if we are handling and event generated using lambda, we schedue a
+//new event for arrival or else we do the usual enqueue/eos thingy
 void handlearrival(struct event* event,double clocker,struct heap* hp){
+  //printf("arrival event details: index %d,timestamp %f \n",event->index,event->timestamp);
   if(event->outsideworld == 1){
     scheduleevent("A",clocker,0,event->index + 1,mean_arrival_time,hp);
   }
@@ -239,16 +245,22 @@ void handlearrival(struct event* event,double clocker,struct heap* hp){
     printf("check queue sequence \n");
   }
 }
-
+//on probability basis we either forward the customer to the next
+//queue or we exit it from the system. if queue is not empty we get
+//the next event and schedule its eos else we make the server idle.
 void handleendofservice(struct event* event,double clocker,struct heap* hp){
-  if(event->sequence == 1){
-    printf("event time is %f,clocker is %f \n",event->timestamp,clocker);
-  }
+ // if(event->sequence == 1){
+   // printf("event index is %d ,time is %f,clocker is %f \n",event->index,event->timestamp,clocker);
+ // }
   if(event->sequence == 0){
-     srand(time(0));
-    int forward = (rand() % 100) < (successprob*100);
+    // srand(time(0));
+    int forward = (rand() % 100) < 80;
+    printf("forward %d\n",forward);
     if(forward == 1){
       scheduleevent("A",clocker,event->sequence+1,event->index,0,hp);
+    }
+    else if(forward == 0){
+      printf("event index is %d ,time is %f,clocker is %f \n",event->index,event->timestamp,clocker);
     }
   }
   if(qwait[event->sequence] != NULL){
@@ -265,16 +277,19 @@ void simulation(double seed,double mean_service_time0,double mean_service_time1,
     double mean_arrival_time,int successprob,int num_of_queue,struct heap* hp){
   clocker = 0;
   count = 0;
-  scheduleevent("A",clocker,0,0,mean_arrival_time,hp);
-  while(count < 20){
+  scheduleevent("A",clocker,0,1,mean_arrival_time,hp);
+  while(count <= 20){
     struct event* e = getevent(hp);
     clocker = e->timestamp;
+    if(e->outsideworld == 1){
+      count++;
+    }
     if(strcmp(e->eventtype,"A")==0){
       handlearrival(e,clocker,hp);
     }
     else if(strcmp(e->eventtype,"E")==0){
       handleendofservice(e,clocker,hp);
-      count++;
+   //   count++;
     }
     else{
       printf("Event fetched from Calender is neither Arrival nor EOS!!\n");
