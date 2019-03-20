@@ -8,9 +8,7 @@
 /* External definitions for single-server queueing system */
 # include <stdio.h>
 # include <math.h>
-# include <queue>
-# include <iostream>
-using namespace std;
+#include <stdlib.h>
 
 double uniform(double *dseed) {
 
