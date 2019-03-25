@@ -250,16 +250,17 @@ void handlearrival(struct event* event,double clocker,struct heap* hp){
 //the next event and schedule its eos else we make the server idle.
 void handleendofservice(struct event* event,double clocker,struct heap* hp){
  // if(event->sequence == 1){
-   // printf("event index is %d ,time is %f,clocker is %f \n",event->index,event->timestamp,clocker);
+    //printf("event index is %d ,time is %f,sequence is %d \n",event->index,event->timestamp,event->sequence);
  // }
   if(event->sequence == 0){
-    // srand(time(0));
-    int forward = (rand() % 100) < 80;
-    printf("forward %d\n",forward);
-    if(forward == 1){
+    //srand(time(0));
+    double forward = uniform(&seed);
+    //int forward = (rand() % 100) < 80;
+    //printf("forward %f\n",roundf(forward *10)/10);
+    if(forward >0.2){
       scheduleevent("A",clocker,event->sequence+1,event->index,0,hp);
     }
-    else if(forward == 0){
+    else if(forward <= 0.2){
       printf("event index is %d ,time is %f,clocker is %f \n",event->index,event->timestamp,clocker);
     }
   }
