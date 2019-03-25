@@ -199,19 +199,25 @@ void scheduleevent(char* eventtype,double clocker,int sequence,int index,double 
   int outsideflag;
   struct event* newevent = (struct event*)malloc(sizeof(struct event));
   if(strcmp(event,"A") == 0){
-  //printf("schedule eve index %d,sequence %d \n",index,sequence);
     if(meantime == 0){
       time = clocker;
       outsideflag = 0;
     }
-    else{
-      time = clocker + expon(&seed,meantime);
+    else if(meantime !=0){
+      time = clocker + expon(&seed,mean_arrival_time);
       outsideflag = 1;
     }
+  //printf("schedule eve index %d,sequence %d ,time %f \n",index,sequence,time);
   }
   else if(strcmp(event,"E") == 0){
-    time = clocker + expon(&seed,meantime);
+    if(sequence ==0){
+      time = clocker + expon(&seed,mean_service_time0);
+    }
+    else if(sequence == 1){
+      time = clocker + expon(&seed,mean_service_time1);
+    }
     outsideflag = 0;
+  //printf("schedule end eve index %d,sequence %d, time %f \n",index,sequence,time);
   }
   else{
     printf("event is neither arrival nor end of service!! \n");
@@ -229,10 +235,9 @@ void scheduleevent(char* eventtype,double clocker,int sequence,int index,double 
 void handlearrival(struct event* event,double clocker,struct heap* hp){
   //printf("arrival event details: index %d,timestamp %f \n",event->index,event->timestamp);
   if(event->outsideworld == 1){
-    scheduleevent("A",clocker,0,event->index + 1,mean_arrival_time,hp);
+    scheduleevent("A",clocker,0,(event->index) + 1,mean_arrival_time,hp);
   }
-  if(event->sequence < num_of_queue){
-    if(server[event->sequence] == 0){
+  if(server[event->sequence] == 0){
       server[event->sequence] = 1;
       double meantime = getservice(event->sequence);
       scheduleevent("E",clocker,event->sequence,event->index,meantime,hp);
@@ -240,36 +245,35 @@ void handlearrival(struct event* event,double clocker,struct heap* hp){
     else{
       enqueue(event,&qwait[event->sequence]);
     }
-  }
-  else{
-    printf("check queue sequence \n");
-  }
+ 
 }
 //on probability basis we either forward the customer to the next
 //queue or we exit it from the system. if queue is not empty we get
 //the next event and schedule its eos else we make the server idle.
 void handleendofservice(struct event* event,double clocker,struct heap* hp){
- // if(event->sequence == 1){
-    //printf("event index is %d ,time is %f,sequence is %d \n",event->index,event->timestamp,event->sequence);
- // }
+   // printf("event index is %d ,time is %f,sequence is %d \n",event->index,event->timestamp,event->sequence);
   if(event->sequence == 0){
+    //printf("event index is %d ,time is %f,sequence is %d \n",event->index,event->timestamp,event->sequence);
     //srand(time(0));
     double forward = uniform(&seed);
     //int forward = (rand() % 100) < 80;
-    //printf("forward %f\n",roundf(forward *10)/10);
+    //printf("forward %f\n",forward);
     if(forward >0.2){
-      scheduleevent("A",clocker,event->sequence+1,event->index,0,hp);
+      scheduleevent("A",clocker,(event->sequence)+1,event->index,0,hp);
     }
-    else if(forward <= 0.2){
+    else if(forward < 0.2){
       printf("event index is %d ,time is %f,clocker is %f \n",event->index,event->timestamp,clocker);
     }
+  }
+  else if(event->sequence == 1){
+    scheduleevent("A",clocker,(event->sequence)+1,event->index,0,hp);
   }
   if(qwait[event->sequence] != NULL){
     struct event* nextevent = dequeue(&qwait[event->sequence]);
     double meantime = getservice(nextevent->sequence);
     scheduleevent("E",clocker,nextevent->sequence,nextevent->index,meantime,hp);
   }
-  else{
+  else if(qwait[event->sequence] == NULL){
     server[event->sequence] = 0;
   }
 }
@@ -286,9 +290,11 @@ void simulation(double seed,double mean_service_time0,double mean_service_time1,
       count++;
     }
     if(strcmp(e->eventtype,"A")==0){
+    //printf("arrivals: %d,seq: %d \n",e->index,e->sequence);
       handlearrival(e,clocker,hp);
     }
     else if(strcmp(e->eventtype,"E")==0){
+    //printf("eos: index is %d,seq: %d, time: %f \n",e->index,e->sequence,clocker);
       handleendofservice(e,clocker,hp);
    //   count++;
     }
@@ -310,7 +316,7 @@ int main(int argc,char* argv[]) {
         double mu1 = atof(argv[3]);
         double prob0 = atof(argv[4]);
         seed = atof(argv[5]);
-        printf("%f \n",seed);
+        printf("%f, %f, %f, %f \n",seed, mu0,mu1,lambda);
         mean_service_time0 = 1/mu0;
         mean_service_time1 = 1/mu1;
         mean_arrival_time = 1/lambda;
