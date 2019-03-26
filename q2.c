@@ -13,14 +13,20 @@
 
 double uniform(double *);
 double expon(double *, float);
-
+double servicetime[2500];
+double endofservicetime[2500];
+double arrivaltime[2500];
+double delay;
+double prev_end_service;
+double totaldelay;
 double seed; //set the seed only once, at the start.
 double mean_service_time;
 double mean_interarrival_time;
+int max_no_of_customers_allowed =2000;
 int count;
 double clocker;
 int* server;
-
+double totalservicetime;
 void printUsage() {
     printf("Usage: ./q2 lambda1 lambda2 mu seed \n");
     printf("Example: ./q2 0.33 0.25 0.5 123457 \n");
@@ -178,10 +184,13 @@ void scheduleevent(char* eventtype,double clocker, int index,struct heap* hp,int
   struct event* newevent = (struct event*)malloc(sizeof(struct event));
   if(strcmp(event,"A") == 0){
     time = clocker + expon(&seed,mean_interarrival_time);
+    arrivaltime[index] = time;
+ //   printf("arrival time %f of %d \n",arrivaltime[index],index);
   }
   else if(strcmp(event,"E") == 0){
     time = clocker+ expon(&seed,mean_service_time);
-    //printf("exit time being set %f \n",time);
+    servicetime[index] = time - clocker;
+  //  printf("service time %f of %d \n",servicetime[index],index);
   }
   else{
     printf("event is neither arrival nor end of service!! \n");
@@ -212,22 +221,24 @@ void handlearrival(struct event* event,double clocker,int i, struct heap* hp){
 }
 
 void handleendofservice0(struct event* e, double clocker,struct heap* hp){
+  endofservicetime[e->index] = e->timestamp;
   if(head1 == NULL){
     server[0] = 0;
   }
   else{
     struct event* nextevent = dequeue1(&head1);
-    scheduleevent("E",clocker,e->index,hp,0);
+    scheduleevent("E",clocker,nextevent->index,hp,0);
   }
 }
 
 void handleendofservice1(struct event* e, double clocker,struct heap* hp){
+  endofservicetime[e->index] = e->timestamp;
   if(head1 == NULL){
     server[1] = 0;
   }
   else{
     struct event* nextevent = dequeue1(&head1);
-    scheduleevent("E",clocker,e->index,hp,1);
+    scheduleevent("E",clocker,nextevent->index,hp,1);
   }
 }
 
@@ -236,7 +247,7 @@ void simulation(double seed,double mean_service_time,double mean_interarrival_ti
   count = 0;
   int i =1;
   scheduleevent("A",clocker,i,hp,2);
-  while(count <= 20){
+  while(count < max_no_of_customers_allowed){
     struct event* e = getevent(hp);
     clocker = e->timestamp;
     if(strcmp(e->eventtype,"A")==0){
@@ -261,7 +272,22 @@ void simulation(double seed,double mean_service_time,double mean_interarrival_ti
       printf("Event fetched from Calender is neither Arrival nor EOS!!\n");
     }
   }
-
+  totaldelay =0;
+  for(int i=2;i<=max_no_of_customers_allowed;i++){
+    if(arrivaltime[i] < endofservicetime[i-1]){
+      delay = endofservicetime[i-1] - arrivaltime[i];
+    }
+    else{
+      delay = 0;
+    }
+    totaldelay = totaldelay+ delay;
+  }
+  for(int i = 1;i<= (max_no_of_customers_allowed);i++){
+     totalservicetime = totalservicetime+servicetime[i];
+  }
+  totalservicetime = totalservicetime/(max_no_of_customers_allowed);
+  totaldelay = ((totaldelay / max_no_of_customers_allowed) + totalservicetime);
+  printf("Average waiting time in system= %.3f \n",totaldelay);
 }
 int main(int argc,char* argv[]) {
 
@@ -289,7 +315,7 @@ int main(int argc,char* argv[]) {
         // TODO: Simulation Process
 
         // TODO: Output Statistics
-
+      
     }
 
     return 0;

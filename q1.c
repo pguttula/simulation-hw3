@@ -20,6 +20,7 @@ int num_of_queue;
 int* server;
 double clocker;
 int count;
+int print_count =0;
 void printUsage() {
     printf("Usage: ./q1 lambda mu0 mu1 prob0 seed \n");
     printf("Example: ./q1 1.0 6.0 5.0 0.2 123457 \n");
@@ -251,18 +252,17 @@ void handlearrival(struct event* event,double clocker,struct heap* hp){
 //queue or we exit it from the system. if queue is not empty we get
 //the next event and schedule its eos else we make the server idle.
 void handleendofservice(struct event* event,double clocker,struct heap* hp){
-   // printf("event index is %d ,time is %f,sequence is %d \n",event->index,event->timestamp,event->sequence);
+   //printf("event index is %d ,time is %f,sequence is %d \n",event->index,event->timestamp,event->sequence);
   if(event->sequence == 0){
-    //printf("event index is %d ,time is %f,sequence is %d \n",event->index,event->timestamp,event->sequence);
-    //srand(time(0));
     double forward = uniform(&seed);
-    //int forward = (rand() % 100) < 80;
-    //printf("forward %f\n",forward);
     if(forward >0.2){
       scheduleevent("A",clocker,(event->sequence)+1,event->index,0,hp);
     }
     else if(forward < 0.2){
-      printf("event index is %d ,time is %f,clocker is %f \n",event->index,event->timestamp,clocker);
+  //    if(print_count < 10){
+    //    print_count++;
+        printf("Time is %f , sequence is %d\n",event->timestamp,event->index);
+     // }
     }
   }
   else if(event->sequence == 1){
@@ -283,7 +283,7 @@ void simulation(double seed,double mean_service_time0,double mean_service_time1,
   clocker = 0;
   count = 0;
   scheduleevent("A",clocker,0,1,mean_arrival_time,hp);
-  while(count <= 20){
+  while(count <= 2000){
     struct event* e = getevent(hp);
     clocker = e->timestamp;
     if(e->outsideworld == 1){
