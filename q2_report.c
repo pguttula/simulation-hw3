@@ -13,16 +13,17 @@
 
 double uniform(double *);
 double expon(double *, float);
-double servicetime[2500];
-double endofservicetime[2500];
-double arrivaltime[2500];
+double servicetime[4500];
+double endofservicetime[4500];
+double arrivaltime[4500];
 double delay;
 double prev_end_service;
 double totaldelay;
 double seed; //set the seed only once, at the start.
 double mean_service_time;
 double mean_interarrival_time;
-int max_no_of_customers_allowed =2000;
+int max_no_of_customers_allowed =4000;
+double cumulativedelay = 0;
 int count;
 double clocker;
 int* server;
@@ -255,7 +256,9 @@ void simulation(double seed,double mean_service_time,double mean_interarrival_ti
       handlearrival(e,clocker,i,hp);
     }
     else if(strcmp(e->eventtype,"E")==0){
-      printf("Customer exit time for event %d is %f \n",e->index,e->timestamp);
+      if(count <11){
+        printf("Customer exit time for event %d is %f \n",e->index,e->timestamp);
+      }
       if(e->server == 0){
         count++;
         handleendofservice0(e,clocker,hp);
@@ -288,6 +291,7 @@ void simulation(double seed,double mean_service_time,double mean_interarrival_ti
   totalservicetime = totalservicetime/(max_no_of_customers_allowed);
   totaldelay = ((totaldelay / max_no_of_customers_allowed) + totalservicetime);
   printf("Average waiting time in system= %.3f \n",totaldelay);
+  cumulativedelay = cumulativedelay+ totaldelay;
 }
 int main(int argc,char* argv[]) {
 
@@ -296,23 +300,44 @@ int main(int argc,char* argv[]) {
         printUsage();
         exit(1);
     } else{
-        // argv[0] is program name
         double lambda1 = atof(argv[1]);
         double lambda2 = atof(argv[2]);
         double mu = atof(argv[3]);
         seed = atof(argv[4]);
-        mean_service_time = 1/mu;
-        mean_interarrival_time = 1/(lambda1+lambda2);
-        printf("%f \n",lambda1);
-        struct heap* hp = (struct heap*)malloc(sizeof(struct heap));
-        hp->size = 0;
-        hp->arr = (struct event**)malloc(100*sizeof(struct event*));
-        server = (int *)malloc(2 * sizeof(int));
-        // TODO: Initialize arrival and service means, statistics variables
-        server[0] = 0;
-        server[1] = 0;
-        
-        simulation(seed,mean_service_time,mean_interarrival_time,hp);
+        char random_seed_file[30];
+        strcpy(random_seed_file, "rand_seed.txt");
+        FILE *randfile;
+        randfile = fopen(random_seed_file,"r");
+        char* line = NULL;
+        size_t len = 0;
+        ssize_t nread;
+        char* stopstring;
+        if(randfile != NULL){
+          int i = 0;
+          while((nread = getline(&line,&len,randfile)!= -1)){
+            seed = strtod(line, &stopstring);
+            //printf("seed : %f \n",seed);
+            struct heap* hp = (struct heap*)malloc(sizeof(struct heap));
+            hp->size = 0;
+            hp->arr = (struct event**)malloc(1000*sizeof(struct event*));
+            server = (int *)malloc(2 * sizeof(int));
+            server[0] = 0;
+            server[1] = 0;
+            mean_service_time = 1/mu;
+            mean_interarrival_time = 1/(lambda1+lambda2);
+            for(int i=0;i<4500;i++){
+              servicetime[i] = 0;
+              arrivaltime[i] = 0;
+              endofservicetime[i] = 0;
+            }
+            totalservicetime =0;
+            totaldelay = 0;
+            head1 = NULL;
+            simulation(seed,mean_service_time,mean_interarrival_time,hp);
+          }
+          fclose(randfile);
+          printf("total wait time on avg %f \n", cumulativedelay/10);
+        }
         // TODO: Simulation Process
 
         // TODO: Output Statistics

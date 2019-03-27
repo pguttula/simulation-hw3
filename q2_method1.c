@@ -26,10 +26,9 @@ int count;
 double arrivaltime[2500];
 double endofservicetime[2500];
 double meaninterarrival;
-double meanservice = 1.000;
+double meanservice;
 double avgcustomers;
 int serverstatus;
-int j;
 double servicetime[2500];
 double totalservicetime;
 //arrivaltime[0] = 0.0;
@@ -197,9 +196,6 @@ void scheduleevent(char* eventtype,double clocker, int index,struct heap* hp){
     char* event = eventtype;
     double time;
     struct event* newevent = (struct event*)malloc(sizeof(struct event));
-    if(index == 1){
-      countendschedules = 0;
-    }
     if(strcmp(event,"A") == 0){
       time = clocker + expon(&seed,meaninterarrival);
       arrivaltime[index] = time;
@@ -207,7 +203,6 @@ void scheduleevent(char* eventtype,double clocker, int index,struct heap* hp){
     else if(strcmp(event,"E") == 0){
       time = clocker + expon(&seed, meanservice);
         servicetime[index] = time - clocker;
-      countendschedules++;
     }
     else{
       printf("event is neither arrival nor end of service!! \n");
@@ -250,7 +245,6 @@ void simulation(double seed,struct heap* hp){
   totaldelay = 0;
   cumultaivetime =0;
   averagenumber =0;
-  j = 0;
   int i=1;
   makeserveridle();
   scheduleevent("A",clocker,i,hp);
@@ -283,19 +277,13 @@ void simulation(double seed,struct heap* hp){
   for(int i = 1 ; i<=(max_no_of_customers_allowed);i++){
           totalservicetime = totalservicetime+servicetime[i];
   }
-  for(int i=1;i<=(max_no_of_customers_allowed);i++){
-         cumultaivetime = cumultaivetime+ (endofservicetime[i] -arrivaltime[i]);
-  }
   totalservicetime = totalservicetime/(max_no_of_customers_allowed);
   totaldelay = ((totaldelay / max_no_of_customers_allowed) + totalservicetime);
-  averagenumber = (cumultaivetime /endofservicetime[max_no_of_customers_allowed]);
   printf("Average waiting time in system = %.3f \n", totaldelay);
   memset(arrivaltime, 0, sizeof(arrivaltime));
   memset(endofservicetime, 0, sizeof(endofservicetime));
   memset(servicetime, 0, sizeof(servicetime));
-  countendschedules = 0;
   cumulativedelay = cumulativedelay + totaldelay;
-  cumulativeaverage= cumulativeaverage + averagenumber;
 }
 
 int main(int argc,char* argv[]){
@@ -332,7 +320,8 @@ int main(int argc,char* argv[]){
     size_t len = 0;
     ssize_t nread;
     char* stopstring;
-    meaninterarrival = 1/rho;
+    meaninterarrival = 1/0.25;
+    meanservice = 2;
     struct heap* hp = (struct heap*)malloc(sizeof(struct heap));
     hp->size = 0;
     hp->arr = (struct event**)malloc(100*sizeof(struct event*));
@@ -358,10 +347,7 @@ int main(int argc,char* argv[]){
     if (output_option == 1) {
       printf("Average waiting time in system= %.3f",cumulativedelay/10);
       printf(" minutes\n");
-    } else if (output_option == 2) {
-      printf("Average number in system = %.3f\n",cumulativeaverage/10);
     }
-
 
 
     return 0;
