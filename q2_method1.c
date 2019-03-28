@@ -13,16 +13,13 @@
 double uniform(double *);
 double expon(double *, float);
 double cumulativedelay = 0;
-double cumulativeaverage = 0;
 double seed; //set the seed only once, at the start.
-
 float rho;
 int max_no_of_customers_allowed;
 char random_seed_file[30];
 int output_option;
 double clocker;
 int count;
-//int done = 0;
 double arrivaltime[2500];
 double endofservicetime[2500];
 double meaninterarrival;
@@ -31,8 +28,6 @@ double avgcustomers;
 int serverstatus;
 double servicetime[2500];
 double totalservicetime;
-//arrivaltime[0] = 0.0;
-int countendschedules =0;
 double delay;
 double arrival_curr;
 double prev_end_service;

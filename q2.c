@@ -255,7 +255,7 @@ void simulation(double seed,double mean_service_time,double mean_interarrival_ti
       handlearrival(e,clocker,i,hp);
     }
     else if(strcmp(e->eventtype,"E")==0){
-      printf("Customer exit time for event %d is %f \n",e->index,e->timestamp);
+      printf("Clock: %.6f \n",e->timestamp);
       if(e->server == 0){
         count++;
         handleendofservice0(e,clocker,hp);

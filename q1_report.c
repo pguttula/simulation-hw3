@@ -14,6 +14,8 @@ double expon(double *, float);
 double seed; //set the seed only once, at the start.
 double mean_service_time0;
 double mean_service_time1;
+double cumulativeaverage0 =0;
+double cumulativeaverage1 =0;
 double mean_arrival_time;
 int successprob;
 int num_of_queue;
@@ -284,7 +286,7 @@ void handleendofservice(struct event* event,double clocker,struct heap* hp){
     else if(forward < 0.2){
   //    if(print_count < 10){
     //    print_count++;
-        printf("Clock: %.6f\n",event->timestamp);
+        //printf("Clock: %.6f\n",event->timestamp);
      // }
     }
   }
@@ -302,9 +304,14 @@ void handleendofservice(struct event* event,double clocker,struct heap* hp){
 }
 
 void simulation(double seed,double mean_service_time0,double mean_service_time1,
-    double mean_arrival_time,int successprob,int num_of_queue,struct heap* hp){
+    double mean_arrival_time,int num_of_queue,struct heap* hp){
   clocker = 0;
   count = 1;
+  averagenumber0 = 0;
+  averagenumber1 =0;
+  cumultaivetime0 =0;
+  cumultaivetime1 = 0;
+  endofservicetime =0;
   scheduleevent("A",clocker,0,1,mean_arrival_time,hp);
   while(count <= max_no_of_customers_allowed){
     struct event* e = getevent(hp);
@@ -327,8 +334,8 @@ void simulation(double seed,double mean_service_time0,double mean_service_time1,
   }
   averagenumber0 = (cumultaivetime0/endofservicetime);
   averagenumber1 = (cumultaivetime1/endofservicetime);
-  printf("Average number in system 0: %.3f \n",averagenumber0);
-  printf("Average number in system 1: %.3f \n",averagenumber1);
+  cumulativeaverage0 =  cumulativeaverage0 + averagenumber0;
+  cumulativeaverage1 = cumulativeaverage1 + averagenumber1;
 }
 int main(int argc,char* argv[]) {
 
@@ -344,32 +351,47 @@ int main(int argc,char* argv[]) {
         double prob0 = atof(argv[4]);
         seed = atof(argv[5]);
         printf("%f, %f, %f, %f \n",seed, mu0,mu1,lambda);
-        mean_service_time0 = 1/mu0;
-        mean_service_time1 = 1/mu1;
-        mean_arrival_time = 1/lambda;
-        successprob = 1-prob0;
-        num_of_queue = 2;
-        struct heap* hp = (struct heap*)malloc(sizeof(struct heap));
-        hp->size = 0;
-        hp->arr = (struct event**)malloc(100*sizeof(struct event*));
-        qwait = (struct queue**)malloc(num_of_queue*sizeof(struct queue*));
-        server = (int *)malloc(num_of_queue * sizeof(int));
-        for(int i=0;i<num_of_queue;i++){
-          server[i] = 0;
-          qwait[i] = NULL;
-        }
-        for(int i=0;i<2500;i++){
-          arrivaltime1[i]=0;
-          arrivaltime0[i] =0;
-        }
-        simulation(seed,mean_service_time0,mean_service_time1,mean_arrival_time,successprob,num_of_queue,hp);
+        char random_seed_file[30];
+        strcpy(random_seed_file, "rand_seed.txt");
+        FILE *randfile;
+        randfile = fopen(random_seed_file,"r");
+        char* line = NULL;
+        size_t len = 0;
+        ssize_t nread;
+        char* stopstring;
+        if(randfile != NULL){
+          int i = 0;
+          while((nread = getline(&line,&len,randfile)!= -1)){
+            seed = strtod(line, &stopstring);
+            mean_service_time0 = 1/mu0;
+            mean_service_time1 = 1/mu1;
+            mean_arrival_time = 1/lambda;
+            num_of_queue = 2;
+            struct heap* hp = (struct heap*)malloc(sizeof(struct heap));
+            hp->size = 0;
+            hp->arr = (struct event**)malloc(100*sizeof(struct event*));
+            qwait = (struct queue**)malloc(num_of_queue*sizeof(struct queue*));
+            server = (int *)malloc(num_of_queue * sizeof(int));
+            for(int i=0;i<num_of_queue;i++){
+            server[i] = 0;
+            qwait[i] = NULL;
+            }
+            for(int i=0;i<2500;i++){
+              arrivaltime1[i]=0;
+              arrivaltime0[i] =0;
+            }
+            simulation(seed,mean_service_time0,mean_service_time1,mean_arrival_time,num_of_queue,hp);
         // TODO: Initialize arrival and service means, statistics variables
 
         // TODO: Simulation Process
 
         // TODO: Output Statistics
+        }
 
+        //printf("Average number in system 0: %.3f \n",cumulativeaverage0/10);
+        printf("Average number in system 1: %.3f \n",cumulativeaverage1/10);
     }
 
     return 0;
+}
 }
